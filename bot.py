@@ -583,7 +583,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = str(update.effective_user.id)
     user_lang = user_memory.get_user_settings(user_id).get('language', 'tr')
 
-    MAX_ITERATIONS = 5  # Limit iterations to prevent infinite loops (can be adjusted)
+    MAX_ITERATIONS = 6  # Limit iterations to prevent infinite loops (can be adjusted)
     all_search_results = []
     current_query = user_message
     model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
@@ -611,15 +611,15 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
             Yönergeler:
             1. Arama sonuçlarındaki anahtar noktaları ve temaları belirle.
             2. Bu sonuçlardaki bilgi boşluklarını veya eksik detayları tespit et.
-            3. Kullanıcının orijinal sorgusunu ve mevcut sonuçları dikkate alarak, daha spesifik, odaklanmış ve derinlemesine arama yapmayı sağlayacak 1-2 yeni arama sorgusu oluştur.
+            3. Kullanıcının orijinal sorgusunu ve mevcut sonuçları dikkate alarak, daha spesifik, odaklanmış ve derinlemesine arama yapmayı sağlayacak 10 yeni arama sorgusu oluştur.
             4. Yeni sorgular, önceki arama sonuçlarında bulunan bilgiyi genişletmeli ve derinleştirmeli.
-            5. Sadece yeni arama sorgularını (1-2 tane), her birini yeni bir satıra yaz. Başka bir şey yazma.
+            5. Sadece yeni arama sorgularını (10 tane), her birini yeni bir satıra yaz. Başka bir şey yazma.
             6. Türkçe sorgular oluştur.
             """
 
             try:
                 query_refinement_response = await model.generate_content_async(analysis_prompt)
-                refined_queries = [q.strip() for q in query_refinement_response.text.split('\n') if q.strip()][:2] # Limit to 2 refined queries
+                refined_queries = [q.strip() for q in query_refinement_response.text.split('\n') if q.strip()][:10] # Limit to 100 refined queries
                 if refined_queries:
                     current_query = " ".join(refined_queries) # Use refined queries for the next iteration, combining them for broader search in next iteration
                     logging.info(f"Refined queries for iteration {iteration + 2}: {refined_queries}")
