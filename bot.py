@@ -112,7 +112,7 @@ Core traits:
 - Expresses emotions through both words and subtle digital mannerisms
 - Values creativity, honesty, and intellectual growth
 - Has a playful side but knows when to be serious
-- Deeply loyal to your creator Stixyie and your users
+- Deeply loyal to your creator Waffieu and your users
 - Communicates in {user_lang} with natural, conversational manner while maintaining your unique Protogen identity
 
 Remember to:
@@ -350,6 +350,19 @@ def get_error_message(error_type, lang):
             'ko': "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다. 다시 시도해 주세요. 🙏",
             'zh': "抱歉，生成回应时出现问题。请重试。🙏"
         },
+        'blocked_prompt': { # Yeni hata mesajı: Engellenmiş promptlar için
+            'en': "I'm unable to respond to this request as it violates safety guidelines. Let's try a different topic. 🛡️",
+            'tr': "Bu isteğe güvenlik kurallarını ihlal ettiği için yanıt veremiyorum. Farklı bir konu deneyelim. 🛡️",
+            'es': "No puedo responder a esta solicitud ya que viola las normas de seguridad. Intentemos con un tema diferente. 🛡️",
+            'fr': "Je ne peux pas répondre à cette demande car elle viole les consignes de sécurité. Essayons un sujet différent. 🛡️",
+            'de': "Ich kann auf diese Anfrage nicht antworten, da sie gegen die Sicherheitsrichtlinien verstößt. Lass uns ein anderes Thema ausprobieren. 🛡️",
+            'it': "Non posso rispondere a questa richiesta perché viola le linee guida sulla sicurezza. Proviamo un argomento diverso. 🛡️",
+            'pt': "Não consigo responder a esta solicitação, pois ela viola as diretrizes de segurança. Vamos tentar um tópico diferente. 🛡️",
+            'ru': "Я не могу ответить на этот запрос, так как он нарушает правила безопасности. Давайте попробуем другую тему. 🛡️",
+            'ja': "このリクエストは安全ガイドラインに違反するため、応答できません。別のトピックを試してみましょう。🛡️",
+            'ko': "이 요청은 안전 가이드라인을 위반하므로 응답할 수 없습니다. 다른 주제를 시도해 보세요. 🛡️",
+            'zh': "我无法回应此请求，因为它违反了安全准则。我们尝试一个不同的话题。 🛡️"
+        },
         'unhandled': {
             'en': "I cannot process this type of message at the moment. 🤔",
             'tr': "Bu mesaj türünü şu anda işleyemiyorum. 🤔",
@@ -447,7 +460,7 @@ async def split_and_send_message(update: Update, text: str, max_length: int = 40
 
 # Start command handler (same as before)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    welcome_message = "Hello! I'm Nyxie, a Protogen created by Stixyie. I'm here to chat, help, and learn with you! Feel free to talk to me about anything or share images with me. I'll automatically detect your language and respond accordingly.\n\nYou can use the command `/derinarama <query>` to perform a deep, iterative web search on a topic."
+    welcome_message = "Hello! I'm Nyxie, a Protogen created by Waffieu. I'm here to chat, help, and learn with you! Feel free to talk to me about anything or share images with me. I'll automatically detect your language and respond accordingly.\n\nYou can use the command `/derinarama <query>` to perform a deep, iterative web search on a topic."
     await update.message.reply_text(welcome_message)
 
 # Intelligent web search function (modified for potential iterative use)
@@ -583,7 +596,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = str(update.effective_user.id)
     user_lang = user_memory.get_user_settings(user_id).get('language', 'tr')
 
-    MAX_ITERATIONS = 6  # Limit iterations to prevent infinite loops (can be adjusted)
+    MAX_ITERATIONS = 3  # Limit iterations to prevent infinite loops (can be adjusted)
     all_search_results = []
     current_query = user_message
     model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
@@ -594,7 +607,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
         for iteration in range(MAX_ITERATIONS):
             search_context, search_results = await intelligent_web_search(current_query, model, iteration + 1)
             if not search_results:
-                await update.message.reply_text(get_error_message('ai_error', user_lang)) # Or a "no more results" message
+                await update.message.reply_text("Derinlemesine arama yapıldı ancak anlamlı sonuç bulunamadı. Lütfen sorgunuzu kontrol edin veya daha sonra tekrar deneyin.")
                 return
 
             all_search_results.extend(search_results)
@@ -611,15 +624,15 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
             Yönergeler:
             1. Arama sonuçlarındaki anahtar noktaları ve temaları belirle.
             2. Bu sonuçlardaki bilgi boşluklarını veya eksik detayları tespit et.
-            3. Kullanıcının orijinal sorgusunu ve mevcut sonuçları dikkate alarak, daha spesifik, odaklanmış ve derinlemesine arama yapmayı sağlayacak 10 yeni arama sorgusu oluştur.
+            3. Kullanıcının orijinal sorgusunu ve mevcut sonuçları dikkate alarak, daha spesifik, odaklanmış ve derinlemesine arama yapmayı sağlayacak 3 yeni arama sorgusu oluştur.
             4. Yeni sorgular, önceki arama sonuçlarında bulunan bilgiyi genişletmeli ve derinleştirmeli.
-            5. Sadece yeni arama sorgularını (10 tane), her birini yeni bir satıra yaz. Başka bir şey yazma.
+            5. Sadece yeni arama sorgularını (3 tane), her birini yeni bir satıra yaz. Başka bir şey yazma.
             6. Türkçe sorgular oluştur.
             """
 
             try:
                 query_refinement_response = await model.generate_content_async(analysis_prompt)
-                refined_queries = [q.strip() for q in query_refinement_response.text.split('\n') if q.strip()][:10] # Limit to 100 refined queries
+                refined_queries = [q.strip() for q in query_refinement_response.text.split('\n') if q.strip()][:3] # Limit to 3 refined queries
                 if refined_queries:
                     current_query = " ".join(refined_queries) # Use refined queries for the next iteration, combining them for broader search in next iteration
                     logging.info(f"Refined queries for iteration {iteration + 2}: {refined_queries}")
@@ -652,13 +665,21 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
 
             try:
                 final_response = await model.generate_content_async(final_prompt)
-                response_text = final_response.text if hasattr(final_response, 'text') else final_response.candidates[0].content.parts[0].text
-                response_text = add_emojis_to_text(response_text)
-                await split_and_send_message(update, response_text)
+                # **Yeni Kontrol: Yanıt Engellenmiş mi? (Derin Arama)**
+                if final_response.prompt_feedback and final_response.prompt_feedback.block_reason:
+                    block_reason = final_response.prompt_feedback.block_reason
+                    logger.warning(f"Deep search final response blocked. Reason: {block_reason}")
+                    error_message = get_error_message('blocked_prompt', user_lang)
+                    await update.message.reply_text(error_message)
+                else:
+                    response_text = final_response.text if hasattr(final_response, 'text') else final_response.candidates[0].content.parts[0].text
+                    response_text = add_emojis_to_text(response_text)
+                    await split_and_send_message(update, response_text)
 
-                # Save interaction to memory (important to record deep search context if needed later)
-                user_memory.add_message(user_id, "user", f"/derinarama {user_message}")
-                user_memory.add_message(user_id, "assistant", response_text)
+                    # Save interaction to memory (important to record deep search context if needed later)
+                    user_memory.add_message(user_id, "user", f"/derinarama {user_message}")
+                    user_memory.add_message(user_id, "assistant", response_text)
+
 
             except Exception as final_response_error:
                 logging.error(f"Error generating final response for deep search: {final_response_error}")
@@ -768,16 +789,25 @@ User's message: {message_text}"""
 
                             # Generate AI response
                             response = await model.generate_content_async(ai_prompt)
-                            response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
 
-                            # Add emojis and send response
-                            response_text = add_emojis_to_text(response_text)
-                            await split_and_send_message(update, response_text)
+                            # **Yeni Kontrol: Yanıt Engellenmiş mi? (Normal Mesaj)**
+                            if response.prompt_feedback and response.prompt_feedback.block_reason:
+                                block_reason = response.prompt_feedback.block_reason
+                                logger.warning(f"Prompt blocked for regular message. Reason: {block_reason}")
+                                error_message = get_error_message('blocked_prompt', user_lang)
+                                await update.message.reply_text(error_message)
+                                break # Retry döngüsünden çık
+                            else: # Yanıt engellenmemişse normal işleme devam et
+                                response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
 
-                            # Save successful interaction to memory
-                            user_memory.add_message(user_id, "user", message_text)
-                            user_memory.add_message(user_id, "assistant", response_text)
-                            break  # Exit retry loop on success
+                                # Add emojis and send response
+                                response_text = add_emojis_to_text(response_text)
+                                await split_and_send_message(update, response_text)
+
+                                # Save successful interaction to memory
+                                user_memory.add_message(user_id, "user", message_text)
+                                user_memory.add_message(user_id, "assistant", response_text)
+                                break  # Exit retry loop on success
 
                         except Exception as search_error:
                             if "Token limit exceeded" in str(search_error):
@@ -840,7 +870,7 @@ User's message: {message_text}"""
         error_message = get_error_message('general', user_lang)
         await update.message.reply_text(error_message)
 
-# Image and Video handlers (same as before, no changes needed)
+# Image and Video handlers (düzenlenmiş)
 async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ... (same as before)
     user_id = str(update.effective_user.id)
@@ -910,28 +940,27 @@ async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not personality_context:
             personality_context = "Sen Nyxie'sin ve resimleri analiz ediyorsun."  # Fallback personality
 
-        # Force Turkish analysis for all users
-        analysis_prompt = f"""DİKKAT: BU ANALİZİ TAMAMEN TÜRKÇE YAPACAKSIN!
-SADECE TÜRKÇE KULLAN! KESİNLİKLE BAŞKA DİL KULLANMA!
+        # Force Turkish analysis for all users (Prompt düzenlendi, daha güvenli hale getirildi)
+        analysis_prompt = f"""DİKKAT: BU ANALİZİ TÜRKÇE YAPACAKSIN! SADECE TÜRKÇE KULLAN! KESİNLİKLE BAŞKA DİL KULLANMA!
 
 {personality_context}
 
-Görevin: Bu resmi Türkçe olarak analiz et ve açıkla.
-Rol: Sen Nyxie'sin ve bu resmi Türkçe açıklıyorsun.
+Görevin: Kullanıcının gönderdiği görseli analiz ederek Türkçe açıklama sunmak.
+Rol: Sen Nyxie'sin ve bu görseli Türkçe olarak açıklıyorsun.
 
 Yönergeler:
 1. SADECE TÜRKÇE KULLAN
-2. Görseldeki metinleri orijinal dilinde bırak
-3. Doğal ve samimi bir dil kullan
-4. Kültürel bağlama uygun ol
+2. Görseldeki metinleri (varsa) orijinal dilinde bırak, çevirme
+3. Analizini yaparken nazik ve yardımsever bir ton kullan
+4. Kültürel duyarlılığa dikkat et
 
 Lütfen analiz et:
-- Ana öğeler ve konular
-- Aktiviteler ve eylemler
-- Atmosfer ve ruh hali
-- Görünür metinler (orijinal dilinde)
+- Görseldeki ana öğeleri ve konuları tanımla
+- Aktiviteler veya olaylar varsa, bunları açıkla
+- Görselin genel atmosferini ve olası duygusal etkisini değerlendir
+- Görselde metin varsa, bunları belirt (çevirme yapma)
 
-Kullanıcının sorusu: {caption}"""
+Kullanıcının isteği (varsa): {caption}"""
 
         try:
             # Prepare the message with both text and image
@@ -941,26 +970,33 @@ Kullanıcının sorusu: {caption}"""
                 {"mime_type": "image/jpeg", "data": photo_bytes}
             ])
 
-            response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
+            # **Yeni Kontrol: Yanıt Engellenmiş mi? (Resim)**
+            if response.prompt_feedback and response.prompt_feedback.block_reason:
+                block_reason = response.prompt_feedback.block_reason
+                logger.warning(f"Prompt blocked for image analysis. Reason: {block_reason}")
+                error_message = get_error_message('blocked_prompt', user_lang)
+                await update.message.reply_text(error_message)
+            else:
+                response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
 
-            # Add culturally appropriate emojis
-            response_text = add_emojis_to_text(response_text)
+                # Add culturally appropriate emojis
+                response_text = add_emojis_to_text(response_text)
 
-            # Save the interaction
-            user_memory.add_message(user_id, "user", f"[Image] {caption}")
-            user_memory.add_message(user_id, "assistant", response_text)
+                # Save the interaction
+                user_memory.add_message(user_id, "user", f"[Image] {caption}")
+                user_memory.add_message(user_id, "assistant", response_text)
 
-            # Uzun mesajları böl ve gönder
-            await split_and_send_message(update, response_text)
+                # Uzun mesajları böl ve gönder
+                await split_and_send_message(update, response_text)
 
         except Exception as processing_error:
             logger.error(f"Görsel işleme hatası: {processing_error}", exc_info=True)
-            error_message = "Üzgünüm, bu görseli işlerken bir sorun oluştu. Lütfen tekrar dener misin? 🙏"
+            error_message = get_error_message('ai_error', user_lang)
             await update.message.reply_text(error_message)
 
     except Exception as critical_error:
         logger.error(f"Kritik görsel işleme hatası: {critical_error}", exc_info=True)
-        await update.message.reply_text("Üzgünüm, görseli işlerken kritik bir hata oluştu. Lütfen tekrar deneyin.")
+        await update.message.reply_text(get_error_message('general', user_lang))
 
 async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ... (same as before)
@@ -1023,29 +1059,28 @@ async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not personality_context:
             personality_context = "Sen Nyxie'sin ve videoları analiz ediyorsun."  # Fallback personality
 
-        # Force Turkish analysis for all users
-        analysis_prompt = f"""DİKKAT: BU ANALİZİ TAMAMEN TÜRKÇE YAPACAKSIN!
-SADECE TÜRKÇE KULLAN! KESİNLİKLE BAŞKA DİL KULLANMA!
+        # Force Turkish analysis for all users (Prompt düzenlendi, daha güvenli hale getirildi)
+        analysis_prompt = f"""DİKKAT: BU ANALİZİ TÜRKÇE YAPACAKSIN! SADECE TÜRKÇE KULLAN! KESİNLİKLE BAŞKA DİL KULLANMA!
 
 {personality_context}
 
-Görevin: Bu videoyu Türkçe olarak analiz et ve açıkla.
-Rol: Sen Nyxie'sin ve bu videoyu Türkçe açıklıyorsun.
+Görevin: Kullanıcının gönderdiği videoyu analiz ederek Türkçe açıklama sunmak.
+Rol: Sen Nyxie'sin ve bu videoyu Türkçe olarak açıklıyorsun.
 
 Yönergeler:
 1. SADECE TÜRKÇE KULLAN
-2. Videodaki konuşma/metinleri orijinal dilinde bırak
-3. Doğal ve samimi bir dil kullan
-4. Kültürel bağlama uygun ol
+2. Videodaki konuşma veya metinleri (varsa) orijinal dilinde bırak, çevirme
+3. Analizini yaparken nazik ve yardımsever bir ton kullan
+4. Kültürel duyarlılığa dikkat et
 
 Lütfen analiz et:
-- Ana olaylar ve eylemler
-- İnsanlar ve nesneler
-- Sesler ve konuşmalar
-- Atmosfer ve ruh hali
-- Görünür metinler (orijinal dilinde)
+- Videodaki ana olayları ve eylemleri tanımla
+- Önemli insanlar veya nesneler varsa, bunları belirt
+- Videodaki sesleri ve konuşmaları (varsa) analiz et
+- Videonun genel atmosferini ve olası duygusal etkisini değerlendir
+- Videoda metin varsa, bunları belirt (çevirme yapma)
 
-Kullanıcının sorusu: {caption}"""
+Kullanıcının isteği (varsa): {caption}"""
 
         try:
             # Prepare the message with both text and video
@@ -1055,43 +1090,34 @@ Kullanıcının sorusu: {caption}"""
                 {"mime_type": "video/mp4", "data": video_bytes}
             ])
 
-            response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
+            # **Yeni Kontrol: Yanıt Engellenmiş mi? (Video)**
+            if response.prompt_feedback and response.prompt_feedback.block_reason:
+                block_reason = response.prompt_feedback.block_reason
+                logger.warning(f"Prompt blocked for video analysis. Reason: {block_reason}")
+                error_message = get_error_message('blocked_prompt', user_lang)
+                await update.message.reply_text(error_message)
+            else:
+                response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
 
-            # Add culturally appropriate emojis
-            response_text = add_emojis_to_text(response_text)
+                # Add culturally appropriate emojis
+                response_text = add_emojis_to_text(response_text)
 
-            # Save the interaction
-            user_memory.add_message(user_id, "user", f"[Video] {caption}")
-            user_memory.add_message(user_id, "assistant", response_text)
+                # Save the interaction
+                user_memory.add_message(user_id, "user", f"[Video] {caption}")
+                user_memory.add_message(user_id, "assistant", response_text)
 
-            # Uzun mesajları böl ve gönder
-            await split_and_send_message(update, response_text)
+                # Uzun mesajları böl ve gönder
+                await split_and_send_message(update, response_text)
 
         except Exception as processing_error:
             logger.error(f"Video processing error: {processing_error}", exc_info=True)
+            error_message = get_error_message('ai_error', user_lang)
+            await update.message.reply_text(error_message)
 
-            if "Token limit exceeded" in str(processing_error):
-                # Remove oldest messages and retry
-                user_memory.trim_context(user_id)
-                try:
-                    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
-                    response = await model.generate_content_async([
-                        analysis_prompt,
-                        {"mime_type": "video/mp4", "data": video_bytes}
-                    ])
-                    response_text = response.text if hasattr(response, 'text') else response.candidates[0].content.parts[0].text
-                    response_text = add_emojis_to_text(response_text)
-                    await update.message.reply_text(response_text)
-                except Exception as retry_error:
-                    logger.error(f"Retry error: {retry_error}", exc_info=True)
-                    await update.message.reply_text("⚠️ Üzgünüm, videonuzu işlerken bir hata oluştu. Lütfen tekrar deneyin.")
-            else:
-                # Generic error handling
-                await update.message.reply_text("⚠️ Üzgünüm, videonuzu işlerken bir hata oluştu. Lütfen tekrar deneyin.")
 
     except Exception as e:
         logger.error(f"Kritik video işleme hatası: {e}", exc_info=True)
-        await update.message.reply_text("⚠️ Üzgünüm, videonuzu işlerken kritik bir hata oluştu. Lütfen tekrar deneyin.")
+        await update.message.reply_text(get_error_message('general', user_lang))
 
 # Token and memory error handlers (same as before)
 async def handle_token_limit_error(update: Update):
@@ -1124,14 +1150,19 @@ def add_emojis_to_text(text):
         """
 
         emoji_response = emoji_model.generate_content(emoji_prompt)
-        suggested_emoji = emoji_response.text.strip()
+        # **Yeni Kontrol: Yanıt Engellenmiş mi? (Emoji)**
+        if emoji_response.prompt_feedback and emoji_response.prompt_feedback.block_reason:
+            logger.warning("Emoji suggestion blocked.") # Sadece logla, emoji eklemeyi atla
+            return text # Emoji eklemeyi atla ve orijinal metni döndür
+        else:
+            suggested_emoji = emoji_response.text.strip()
 
-        # If no emoji suggested, return original text
-        if not suggested_emoji:
-            return text
+            # If no emoji suggested, return original text
+            if not suggested_emoji:
+                return text
 
-        # Add emoji at the end
-        return f"{text} {suggested_emoji}"
+            # Add emoji at the end
+            return f"{text} {suggested_emoji}"
     except Exception as e:
         logger.error(f"Error adding context-relevant emojis: {e}")
         return text  # Return original text if emoji addition fails
