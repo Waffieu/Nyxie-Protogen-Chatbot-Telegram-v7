@@ -464,19 +464,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(welcome_message)
 
 # Intelligent web search function (modified for potential iterative use)
-async def intelligent_web_search(user_message, model, iteration=0): # Added iteration counter
+async def intelligent_web_search(user_message, model, user_id, iteration=0): # user_id parametresi eklendi
     """
-    Intelligently generate and perform web searches using Gemini, now with iteration info
+    Intelligently generate and perform web searches using Gemini, now with iteration info and user context
     """
     try:
-        logging.info(f"Web search başlatıldı (Iteration {iteration}): {user_message}")
+        logging.info(f"Web search başlatıldı (Iteration {iteration}): {user_message}, User ID: {user_id}")
+
+        # Konuşma geçmişini al
+        context_messages = user_memory.get_user_settings(user_id).get("messages", [])
+        history_text = "\n".join([
+            f"{'Kullanıcı' if msg['role'] == 'user' else 'Asistan'}: {msg['content']}"
+            for msg in context_messages[-5:] # Son 5 mesajı alalım, isteğe göre ayarlanabilir
+        ])
 
         # First, generate search queries using Gemini
         query_generation_prompt = f"""
-        Kullanıcının mesajından en alakalı web araması sorgularını oluştur.
-        Bu sorgular, derinlemesine araştırma yapmak için kullanılacak.
+        Görevin, kullanıcının son mesajını ve önceki konuşma bağlamını dikkate alarak en alakalı web arama sorgularını oluşturmak.
+        Bu sorgular, derinlemesine araştırma yapmak için kullanılacak. Eğer kullanıcının son mesajı önceki konuşmaya bağlı bir devam sorusu ise,
+        bağlamı kullanarak daha eksiksiz ve anlamlı sorgular üret.
 
-        Kullanıcı mesajı: {user_message}
+        Önceki Konuşma Bağlamı (Son 5 Mesaj):
+        ```
+        {history_text}
+        ```
+
+        Kullanıcı Mesajı: {user_message}
 
         Kurallar:
         - En fazla 3 sorgu oluştur
@@ -486,7 +499,7 @@ async def intelligent_web_search(user_message, model, iteration=0): # Added iter
         - Eğer bu bir derin arama iterasyonu ise, önceki arama sonuçlarını ve kullanıcı mesajını dikkate alarak daha spesifik ve derinlemesine sorgular oluştur.
 
         Önceki sorgular ve sonuçlar (varsa): ... (Şimdilik boş, iterasyonlar eklendikçe burası dolacak)
-        """ # In later iterations, we can add previous queries/results to the prompt
+        """
 
         # Use Gemini to generate search queries with timeout and retry logic
         logging.info(f"Generating search queries with Gemini (Iteration {iteration})")
@@ -605,7 +618,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
         await context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
 
         for iteration in range(MAX_ITERATIONS):
-            search_context, search_results = await intelligent_web_search(current_query, model, iteration + 1)
+            search_context, search_results = await intelligent_web_search(current_query, model, user_id, iteration + 1) # user_id eklendi
             if not search_results:
                 await update.message.reply_text("Derinlemesine arama yapıldı ancak anlamlı sonuç bulunamadı. Lütfen sorgunuzu kontrol edin veya daha sonra tekrar deneyin.")
                 return
@@ -693,7 +706,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
     finally:
         await context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING) # Typing action at end
 
-# Handle message function (modified to handle /derinarama command)
+# Handle message function (modified to handle /derinarama command and context-aware search)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Entering handle_message function")
 
@@ -782,7 +795,7 @@ User's message: {message_text}"""
                         # Web search integration (for normal messages as well, could be conditional if needed)
                         try:
                             model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
-                            web_search_response, _ = await intelligent_web_search(message_text, model) # Get context, ignore results list for normal messages
+                            web_search_response, _ = await intelligent_web_search(message_text, model, user_id) # Get context, ignore results list for normal messages, user_id eklendi
 
                             if web_search_response and len(web_search_response.strip()) > 10:
                                 ai_prompt += f"\n\nAdditional Context (Web Search Results):\n{web_search_response}"
