@@ -50,7 +50,7 @@ if not api_key:
 try:
     genai.configure(api_key=api_key)
     # Test the configuration with a simple generation
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+    model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
     logging.info("Gemini API configured successfully")
 except Exception as e:
     logging.error(f"Failed to configure Gemini API: {str(e)}")
@@ -289,7 +289,7 @@ Rules:
 """
 
         # Use Gemini Pro for language detection
-        model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+        model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
         response = await model.generate_content_async(language_detection_prompt)
 
         # Extract the language code
@@ -612,7 +612,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
     MAX_ITERATIONS = 3  # Limit iterations to prevent infinite loops (can be adjusted)
     all_search_results = []
     current_query = user_message
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+    model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
 
     try:
         await context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
@@ -794,7 +794,7 @@ User's message: {message_text}"""
 
                         # Web search integration (for normal messages as well, could be conditional if needed)
                         try:
-                            model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+                            model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
                             web_search_response, _ = await intelligent_web_search(message_text, model, user_id) # Get context, ignore results list for normal messages, user_id eklendi
 
                             if web_search_response and len(web_search_response.strip()) > 10:
@@ -977,7 +977,7 @@ Kullanıcının isteği (varsa): {caption}"""
 
         try:
             # Prepare the message with both text and image
-            model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+            model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
             response = await model.generate_content_async([
                 analysis_prompt,
                 {"mime_type": "image/jpeg", "data": photo_bytes}
@@ -1097,7 +1097,7 @@ Kullanıcının isteği (varsa): {caption}"""
 
         try:
             # Prepare the message with both text and video
-            model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+            model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
             response = await model.generate_content_async([
                 analysis_prompt,
                 {"mime_type": "video/mp4", "data": video_bytes}
@@ -1146,7 +1146,7 @@ def add_emojis_to_text(text):
     # ... (same as before)
     try:
         # Use Gemini to suggest relevant emojis
-        emoji_model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')
+        emoji_model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
 
         # Prompt Gemini to suggest emojis based on text context
         emoji_prompt = f"""
