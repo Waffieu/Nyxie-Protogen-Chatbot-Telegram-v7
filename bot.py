@@ -141,7 +141,7 @@ def get_day_period(hour):
     else:
         return "Night"
 
-# UserMemory class (same as before)
+# UserMemory class (updated get_relevant_context)
 class UserMemory:
     def __init__(self):
         self.users = {}
@@ -241,22 +241,33 @@ class UserMemory:
         self.users[user_id]["messages"].append(message)
         self.save_user_memory(user_id)
 
-    def get_relevant_context(self, user_id, max_messages=10):
-        """Get relevant conversation context for the user"""
+    def get_relevant_context(self, user_id):
+        """Get as much relevant conversation context as possible within token limit"""
         user_id = str(user_id)
         if user_id not in self.users:
             self.load_user_memory(user_id)
 
         messages = self.users[user_id].get("messages", [])
-        # Get the last N messages
-        recent_messages = messages[-max_messages:] if messages else []
+        context_messages = []
+        total_tokens = 0
+
+        # Mesajları en eskiden en yeniye doğru döngüye al
+        for msg in messages:
+            message_tokens = msg.get("tokens", 0)  # Mesajın token sayısını al
+            if total_tokens + message_tokens <= self.max_tokens:
+                context_messages.append(msg)
+                total_tokens += message_tokens
+            else:
+                logging.info(f"Token limiti aşıldı, eski mesajlar kırpılıyor. Mevcut token: {total_tokens}, Eklenecek token: {message_tokens}, Limit: {self.max_tokens}")
+                break # Token limiti aşılırsa döngüyü durdur
 
         # Format messages into a string
         context = "\n".join([
             f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
-            for msg in recent_messages
+            for msg in context_messages
         ])
 
+        logging.info(f"Bağlam için alınan mesaj sayısı: {len(context_messages)}, Toplam token: {total_tokens}") # Loglama eklendi
         return context
 
     def trim_context(self, user_id):
@@ -706,7 +717,7 @@ async def perform_deep_search(update: Update, context: ContextTypes.DEFAULT_TYPE
     finally:
         await context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING) # Typing action at end
 
-# Handle message function (modified to handle /derinarama command and context-aware search)
+# Handle message function (updated get_relevant_context call)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Entering handle_message function")
 
@@ -763,7 +774,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 while retry_count < MAX_RETRIES:
                     try:
-                        context_messages = user_memory.get_relevant_context(user_id)
+                        context_messages = user_memory.get_relevant_context(user_id) # max_messages kaldırıldı
 
                         # Get personality context
                         personality_context = get_time_aware_personality(
